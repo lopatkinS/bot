@@ -8,12 +8,15 @@ import os
 import sys
 from decimal import Decimal
 
+# Создаем экземпляр класса LiveCoin
 livecoin = LiveCoin(livecoin_attributes.api_key, livecoin_attributes.secret_key)
 
 
+# Функция получаения данных
 def get_pairs(func):
+    # Указываем путь
     A = 'C:\\Users\\Сергей\\PycharmProjects\\bot\\preserved'
-    folder = sys.argv[1] if len(sys.argv) > 1 else os.curdir
+
     entry = func((e for e in os.scandir(A) if e.is_file(follow_symlinks=False)),
                 key=lambda e: getattr(e.stat(), 'st_birthtime', None) or e.stat().st_ctime)
 
@@ -21,6 +24,7 @@ def get_pairs(func):
         return json.loads(data_file.read())
 
 
+# Основная функция
 def main():
     # Получение купленных пар которые сейчас на аккаунте
     account_balances = livecoin.get_balances()
@@ -52,36 +56,47 @@ def main():
                 print(ex)
                 print("No pair {}".format(pair["currency"] + "/USD"))
 
-
-
+    # Получаем все пары с сервера
     all_pair = livecoin.get_tickers()
 
+    # Генерируем названия файла с датой
     file_name = "{}.json".format(datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d_%H-%M'))
 
+    # Записываем данные в папку preserved и названием file_name.json
     with open(os.path.join(os.getcwd() + '\\preserved', file_name), "w", encoding="utf-8") as file:
         json.dump(all_pair, file)
 
 
     path = 'example.json'
 
+    # Получаем все пары
     all_pairs = get_pairs(max)
+    # Получаем пары из самого старого файла
     min_all_pairs = get_pairs(min)
+    # Получаем пары из самого нового файла
     max_all_pairs = get_pairs(max)
 
+    # Идем циклом сначала по минимальным
+    # потом по максимальным парам
     for el_1 in min_all_pairs:
         for el_2 in max_all_pairs:
+            # el_1 - минимальная пара
+            # el_2 - максимальная пара
+            # Сравниваем их пары
             if el_1["symbol"] == el_2["symbol"]:
+                # Сравниваем их цены с нулем
                 if el_2["last"] == 0 or el_1["last"] == 0:
                     continue
+                # Получаем название минимальной пары
                 symbol = el_1['symbol']
+                # Считаем разницу в процентах
                 diff = float(((el_2["last"] - el_1["last"]) / el_1["last"]) * 100)
+                # Получаем цены для минимальной и максимальной
                 mi = el_1["last"]
                 ma = el_2["last"]
 
+                # Выводим в определенном формате
                 print("{0:15} {1:<6.2f}% {2:^3} {3:<15.6f} {4:^3} {5:<15.6f}".format(symbol, diff, "min", mi, "max", ma))
-
-                # print("{} {:.2f}%".format(el_1['symbol'], float(((el_2["last"] - el_1["last"]) / el_1["last"]) * 100), 2),'{:10} {:0.10f}'.format("min:", el_1["last"]), "max:", el_2["last"])
-                #print("min:", el_1["last"], "max:", el_2["last"])
                 break
 
     # нужно выгружать файл 1. С изменениями в процентном соотношении за день с 6:00 и на протяжение каждого часа до 24:00.
@@ -143,11 +158,17 @@ def main():
 
 
 if __name__ == '__main__':
+    # бесконечный цикл
     while True:
         try:
+            # Пробуем запустить main
             main()
+            # Ждем 3600 секунд
             time.sleep(3600)
         except Exception as ex:
+            # main запустить не удалось
+            # поулчили исключение
+            # выводим его и ждем 60 секунд
             print(ex)
             traceback.print_exc()
             time.sleep(60)
